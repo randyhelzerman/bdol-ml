@@ -21,14 +21,25 @@ Copyright Brian Dolhansky 2014
 bdolmail@gmail.com
 """
 
+import math
 import numpy as np
-
 def f_sigmoid(X, deriv=False):
     if not deriv:
         return 1 / (1 + np.exp(-X))
     else:
         return f_sigmoid(X)*(1 - f_sigmoid(X))
 
+def f_cool(X, deriv=False):
+    if deriv:
+        if X > 0:
+            return 1
+        return 0
+    
+    if X > 0:
+        return X
+    return 0
+
+f_cooler = np.vectorize(f_cool)
 
 def f_softmax(X):
     Z = np.sum(np.exp(X), axis=1)
@@ -36,9 +47,31 @@ def f_softmax(X):
     return np.exp(X) / Z
 
 
+
+t = np.array([1,2,3,-1,-2,-3])
+print(f_cooler(t))
+print(f_cooler(t, True))
+print(f_sigmoid(t))
+def f_softmax(X):
+    Z = np.sum(np.exp(X), axis=1)
+    Z = Z.reshape(Z.shape[0], 1)
+    return np.exp(X) / Z
+
+
+
+t = np.array([1,2,3,-1,-2,-3])
+print(f_cooler(t))
+print(f_cooler(t, True))
+print(f_sigmoid(t))
+print(f_sigmoid(t,True))
+
+
+
+
 class Layer:
     def __init__(self, size, minibatch_size, is_input=False, is_output=False,
-                 activation=f_sigmoid):
+                 activation=f_cool):
+#                 activation=f_sigmoid):
         self.is_input = is_input
         self.is_output = is_output
 
@@ -89,32 +122,32 @@ class MLP:
 
         for i in range(self.num_layers-1):
             if i == 0:
-                print "Initializing input layer with size {0}.".format(
+                print("Initializing input layer with size {0}.".format(
                     layer_config[i]
-                )
+                ))
                 # Here, we add an additional unit at the input for the bias
                 # weight.
                 self.layers.append(Layer([layer_config[i]+1, layer_config[i+1]],
                                          minibatch_size,
                                          is_input=True))
             else:
-                print "Initializing hidden layer with size {0}.".format(
+                print("Initializing hidden layer with size {0}.".format(
                     layer_config[i]
-                )
+                ))
                 # Here we add an additional unit in the hidden layers for the
                 # bias weight.
                 self.layers.append(Layer([layer_config[i]+1, layer_config[i+1]],
                                          minibatch_size,
                                          activation=f_sigmoid))
 
-        print "Initializing output layer with size {0}.".format(
+        print("Initializing output layer with size {0}.".format(
             layer_config[-1]
-        )
+        ))
         self.layers.append(Layer([layer_config[-1], None],
                                  minibatch_size,
                                  is_output=True,
                                  activation=f_softmax))
-        print "Done!"
+        print("Done!")
 
     def forward_propagate(self, data):
         # We need to be sure to add bias values to the input
@@ -144,7 +177,7 @@ class MLP:
         N_train = len(train_labels)*len(train_labels[0])
         N_test = len(test_labels)*len(test_labels[0])
 
-        print "Training for {0} epochs...".format(num_epochs)
+        print("Training for {0} epochs...".format(num_epochs))
         for t in range(0, num_epochs):
             out_str = "[{0:4d}] ".format(t)
 
@@ -160,8 +193,12 @@ class MLP:
                     yhat = np.argmax(output, axis=1)
                     errs += np.sum(1-b_labels[np.arange(len(b_labels)), yhat])
 
-                out_str = "{0} Training error: {1:.5f}".format(out_str,
-                                                           float(errs)/N_train)
+            try:
+                out_str = "{0} Training error: {1:.20f}".format(out_str,
+                                                               float(errs)/N_train)
+            except:
+                print("ltraining error ="), print(errs)
+                
 
             if eval_test:
                 errs = 0
@@ -173,4 +210,4 @@ class MLP:
                 out_str = "{0} Test error: {1:.5f}".format(out_str,
                                                        float(errs)/N_test)
 
-            print out_str
+            print(out_str)
